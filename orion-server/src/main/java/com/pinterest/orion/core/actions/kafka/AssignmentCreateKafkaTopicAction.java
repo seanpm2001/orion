@@ -38,6 +38,8 @@ public class AssignmentCreateKafkaTopicAction extends AbstractKafkaAction {
     String topicName = getAttribute(this, ATTR_TOPIC_NAME_KEY).getValue().toString();
     Attribute attributeReplicaAssignments = getAttribute(this, ATTR_REPLICAS_ASSIGNMENTS_KEY);
     Map<Integer, List<Integer>> replicasAssignments = attributeReplicaAssignments.getValue();
+    logger().info("[TEST6] replicasAssignments keys: " + replicasAssignments.keySet());
+    logger().info("[TEST6] replicasAssignments values: " + replicasAssignments.values());
     NewTopic topic = new NewTopic(topicName, replicasAssignments);
     CreateTopicsResult result = adminClient.createTopics(Collections.singletonList(topic));
 

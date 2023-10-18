@@ -353,6 +353,8 @@ public class BrokersetTopicOperator extends KafkaOperator {
         assignmentMap.get(i).add(brokerSequence.next());
       }
     }
+    logger.info("[TEST1b] assignmentMap key: " + assignmentMap.keySet());
+    logger.info("[TEST1b] assignmentMap value: " + assignmentMap.values());
     return assignmentMap;
   }
 
