@@ -150,6 +150,7 @@ public class KafkaTopicSensor extends KafkaSensor {
       Map<String, String> metricsTags = new HashMap<String, String>() {{
         put("topicName", topicDescription.getName());
         put("clusterId", cluster.getClusterId());
+        put("epochTimestamp", String.valueOf(System.currentTimeMillis()/1000));
       }};
       // Topic size
       double topicSize = getTopicSizeByteFromTopicDescription(topicDescription);
