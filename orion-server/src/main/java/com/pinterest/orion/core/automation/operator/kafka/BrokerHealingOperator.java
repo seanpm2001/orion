@@ -133,7 +133,11 @@ public class BrokerHealingOperator extends KafkaOperator {
     Set<String> unhealthyServiceNodes = getMaybeDeadAgents(cluster);
 
     // brokers that are most likely dead (reporting failure from both sources)
-    Set<String> deadBrokers = Sets.intersection(unhealthyKafkaBrokers, unhealthyAgentNodes);
+//    Set<String> deadBrokers = Sets.intersection(unhealthyKafkaBrokers, unhealthyAgentNodes);
+    // TEST: If agent is dead, consider the node as dead for testing.
+    logger.warning("[TEST3] unhealthyAgentNodes: " + unhealthyAgentNodes);
+    Set<String> deadBrokers = unhealthyAgentNodes;
+
     Set<String> nonExistentBrokers = Sets.difference(unhealthyKafkaBrokers, cluster.getNodeMap().keySet());
     deadBrokers = Sets.union(deadBrokers, nonExistentBrokers);
 
