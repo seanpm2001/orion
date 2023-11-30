@@ -57,7 +57,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             logger.info("Will try to restart node " + deadBrokerId + " before replacing");
         }
         logger.info( "Dispatching BrokerRecoveryAction on " + cluster.getClusterId() + " for node: " +  deadBrokerId);
-        getEngine().dispatch(brokerRecoveryAction);
+        getEngine().dispatchChild(this, brokerRecoveryAction);
     }
 
     protected void healBrokers(Set<String> candidates) throws Exception {
