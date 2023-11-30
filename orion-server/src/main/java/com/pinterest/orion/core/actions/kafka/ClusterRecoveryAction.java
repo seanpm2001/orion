@@ -36,7 +36,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
 
     protected void healBroker(String deadBrokerId) throws Exception {
         // This will trigger an action that will attempt to replace the broker ( and first try to restart if agent is still online but Kafka process is down)
-        Action brokerRecoveryAction = new BrokerRecoveryAction();
+        Action brokerRecoveryAction = newBrokerRecoveryAction();
         brokerRecoveryAction.setAttribute(OrionConstants.NODE_ID, deadBrokerId, sensorSet);
 
         if (nonExistentBrokers.size() == 1) {
@@ -121,5 +121,9 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             return null;
         }
         return ret;
+    }
+
+    protected BrokerRecoveryAction newBrokerRecoveryAction() {
+        return new BrokerRecoveryAction();
     }
 }
