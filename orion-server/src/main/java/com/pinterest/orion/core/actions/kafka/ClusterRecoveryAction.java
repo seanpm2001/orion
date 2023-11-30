@@ -31,7 +31,12 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
 
     @Override
     public void runAction() throws Exception {
-        healBrokers(candidates);
+        try {
+            healBrokers(candidates);
+            markSucceeded();
+        } catch (Exception e) {
+            markFailed(e);
+        }
     }
 
     protected void healBroker(String deadBrokerId) throws Exception {
