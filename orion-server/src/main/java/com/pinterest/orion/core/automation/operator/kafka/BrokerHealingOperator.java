@@ -205,17 +205,22 @@ public class BrokerHealingOperator extends KafkaOperator {
     Set<String> candidates = Sets.union(deadBrokers, maybeDeadBrokers);
     if (candidates.size() > 0) {
       // Check if the cluster has other brokers replaced within cooldownMilliseconds
+      logger.warning("[TEST4] Candidates for healing: " + candidates);
       if (cluster.containsAttribute(BrokerRecoveryAction.ATTR_LAST_REPLACED_NODE_ID_KEY)) {
         Attribute lastReplacedAttr = cluster.getAttribute(BrokerRecoveryAction.ATTR_LAST_REPLACED_NODE_ID_KEY);
         Set<String> lastReplacedNodeIds = lastReplacedAttr.getValue();
-        if (System.currentTimeMillis() - lastReplacedAttr.getUpdateTimestamp() < cooldownMilliseconds
-            && Sets.intersection(lastReplacedNodeIds, candidates).size() == 0) {
-          // All candidates are in cooldown phase. Skip check
-          logger.warning("In cooldown phase: Last replacement was at " + new Date(lastReplacedAttr.getUpdateTimestamp()) + " on the node " + lastReplacedAttr.getValue());
-          return;
+        logger.warning("[TEST5] Last replaced nodes: " + lastReplacedNodeIds);
+        if (System.currentTimeMillis() - lastReplacedAttr.getUpdateTimestamp() < cooldownMilliseconds) {
+          // Remove all the nodes that are replaced within cooldownMilliseconds
+          candidates.removeAll(lastReplacedNodeIds);
+          if (candidates.isEmpty()) {
+            // All the candidates are replaced within cooldownMilliseconds. Skip this round.
+            logger.warning("In cooldown phase: " +
+                    "Last replacement was at " + new Date(lastReplacedAttr.getUpdateTimestamp()) +
+                    " on the node " + lastReplacedAttr.getValue());
+            return;
+          }
         }
-        // Only process the nodes that are not in cooldown phase
-        candidates.removeAll(lastReplacedNodeIds);
       }
       ClusterRecoveryAction clusterRecoveryAction = newClusterRecoveryAction();
       clusterRecoveryAction.setCluster(cluster);
