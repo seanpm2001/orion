@@ -222,6 +222,7 @@ public class BrokerHealingOperator extends KafkaOperator {
           }
         }
       }
+      logger.warning("[TEST6] Candidates for healing after cooldown: " + candidates);
       ClusterRecoveryAction clusterRecoveryAction = newClusterRecoveryAction();
       clusterRecoveryAction.setCluster(cluster);
       clusterRecoveryAction.setCandidates(candidates);
