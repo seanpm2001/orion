@@ -15,6 +15,7 @@
  *******************************************************************************/
 package com.pinterest.orion.core.actions.kafka;
 
+import com.google.common.collect.Sets;
 import com.pinterest.orion.core.PluginConfigurationException;
 import com.pinterest.orion.core.actions.Action;
 import com.pinterest.orion.core.actions.alert.AlertLevel;
@@ -30,7 +31,9 @@ import io.dropwizard.metrics5.MetricName;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 public class BrokerRecoveryAction extends NodeAction {
@@ -133,7 +136,16 @@ public class BrokerRecoveryAction extends NodeAction {
           return;
         }
       }
-      getEngine().getCluster().setAttribute(ATTR_LAST_REPLACED_NODE_ID_KEY, nodeId);
+      Set<String> lastReplacedNodeIds = new HashSet<>();
+      lastReplacedNodeIds.add(nodeId);
+      if (getEngine().getCluster().containsAttribute(ATTR_LAST_REPLACED_NODE_ID_KEY)) {
+        // union the last replaced node id with the current set
+        lastReplacedNodeIds = Sets.union(
+                lastReplacedNodeIds,
+                getEngine().getCluster().getAttribute(ATTR_LAST_REPLACED_NODE_ID_KEY).getValue()
+        );
+      }
+      getEngine().getCluster().setAttribute(ATTR_LAST_REPLACED_NODE_ID_KEY, lastReplacedNodeIds);
       OrionServer.METRICS.counter(metricPrefix.resolve("replace_success")).inc();
       markSucceeded();
     } catch (Exception e) {

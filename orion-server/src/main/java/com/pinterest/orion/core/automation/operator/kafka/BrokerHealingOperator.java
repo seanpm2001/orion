@@ -25,15 +25,14 @@ import java.util.function.Function;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.pinterest.orion.core.actions.kafka.ClusterRecoveryAction;
 import com.pinterest.orion.server.OrionServer;
-import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.Sets;
 import com.pinterest.orion.common.NodeInfo;
 import com.pinterest.orion.core.Attribute;
 import com.pinterest.orion.core.Node;
 import com.pinterest.orion.core.PluginConfigurationException;
-import com.pinterest.orion.core.actions.Action;
 import com.pinterest.orion.core.actions.alert.AlertLevel;
 import com.pinterest.orion.core.actions.alert.AlertMessage;
 import com.pinterest.orion.core.actions.kafka.BrokerRecoveryAction;
@@ -41,7 +40,6 @@ import com.pinterest.orion.core.automation.sensor.kafka.KafkaTopicSensor;
 import com.pinterest.orion.core.kafka.KafkaCluster;
 import com.pinterest.orion.core.kafka.KafkaTopicDescription;
 import com.pinterest.orion.core.kafka.KafkaTopicPartitionInfo;
-import com.pinterest.orion.utils.OrionConstants;
 
 public class BrokerHealingOperator extends KafkaOperator {
   private static final Logger logger = Logger.getLogger(BrokerHealingOperator.class.getCanonicalName());
@@ -136,6 +134,12 @@ public class BrokerHealingOperator extends KafkaOperator {
 
     // brokers that are most likely dead (reporting failure from both sources)
     Set<String> deadBrokers = Sets.intersection(unhealthyKafkaBrokers, unhealthyAgentNodes);
+    // TEST: If agent is dead, consider the node as dead for testing.
+    if (unhealthyAgentNodes.size() > 0) {
+      logger.warning("[TEST1] Regard unhealthyAgentNodes as deadBrokers for testing: " + unhealthyAgentNodes);
+      deadBrokers = Sets.union(unhealthyKafkaBrokers, unhealthyAgentNodes);
+    }
+
     Set<String> nonExistentBrokers = Sets.difference(unhealthyKafkaBrokers, cluster.getNodeMap().keySet());
     deadBrokers = Sets.union(deadBrokers, nonExistentBrokers);
 
@@ -199,57 +203,29 @@ public class BrokerHealingOperator extends KafkaOperator {
     setMessage("offline brokers: " + unhealthyKafkaBrokers + "\nunhealthy agent orion nodes: " + unhealthyAgentNodes +
         "\nunhealthy service orion nodes: " + maybeDeadBrokers + "\nnon-existent Brokers: "+ nonExistentBrokers);
     Set<String> candidates = Sets.union(deadBrokers, maybeDeadBrokers);
-    if (candidates.size() == 1) {
-      // Check if the cluster has other brokers replaced within cooldownMilliseconds and resume if not
+    if (candidates.size() > 0) {
+      // Check if the cluster has other brokers replaced within cooldownMilliseconds
       if (cluster.containsAttribute(BrokerRecoveryAction.ATTR_LAST_REPLACED_NODE_ID_KEY)) {
         Attribute lastReplacedAttr = cluster.getAttribute(BrokerRecoveryAction.ATTR_LAST_REPLACED_NODE_ID_KEY);
-        if (System.currentTimeMillis() - lastReplacedAttr.getUpdateTimestamp() < cooldownMilliseconds) {
+        Set<String> lastReplacedNodeIds = lastReplacedAttr.getValue();
+        if (System.currentTimeMillis() - lastReplacedAttr.getUpdateTimestamp() < cooldownMilliseconds
+            && Sets.intersection(lastReplacedNodeIds, candidates).size() == 0) {
+          // All candidates are in cooldown phase. Skip check
           logger.warning("In cooldown phase: Last replacement was at " + new Date(lastReplacedAttr.getUpdateTimestamp()) + " on the node " + lastReplacedAttr.getValue());
           return;
         }
+        // Only process the nodes that are not in cooldown phase
+        candidates.removeAll(lastReplacedNodeIds);
       }
-
-      String deadBrokerId = candidates.iterator().next();
-      // This will trigger an action that will attempt to replace the broker ( and first try to restart if agent is still online but Kafka process is down)
-      Action brokerRecoveryAction = newBrokerRecoveryAction();
-      brokerRecoveryAction.setAttribute(OrionConstants.NODE_ID, deadBrokerId, sensorSet);
-
-      if (nonExistentBrokers.size() == 1) {
-        Node existingNode = cluster.getNodeMap().values().iterator().next();
-        String extractedName = deriveNonexistentHostname(
-            existingNode.getCurrentNodeInfo().getHostname(),
-            existingNode.getCurrentNodeInfo().getNodeId(),
-            deadBrokerId
-        );
-        // setting these attributes to indicate that the node doesn't exist in cluster map, and should skip any node-related checks
-        brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_NODE_EXISTS_KEY, false);
-        brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_NONEXISTENT_HOST_KEY, extractedName);
-      }
-
-      if (maybeDeadBrokers.size() == 1) {
-        // Setting this flag in the action will restart the broker before replacing the broker
-        brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_TRY_TO_RESTART_KEY, true);
-        logger.info("Will try to restart node " + deadBrokerId + " before replacing");
-      }
-      logger.info( "Dispatching BrokerRecoveryAction on " + cluster.getClusterId() + " for node: " +  deadBrokerId);
-      dispatch(brokerRecoveryAction);
-    } else if (candidates.size() > 1){
-      cluster.getActionEngine().alert(AlertLevel.HIGH, new AlertMessage(
-          candidates.size() + " brokers on " + cluster.getClusterId() + " are unhealthy",
-          "Brokers " + candidates + " are unhealthy",
-          "orion"
-      ));
-      OrionServer.metricsCounterInc(
-              "broker.services.unhealthy",
-              new HashMap<String, String>() {{
-                put("clusterId", cluster.getClusterId());
-              }}
-      );
-      // more than 1 brokers are dead... better alert and have human intervention
-      logger.severe("More than one broker is in bad state - dead: " + deadBrokers + " service down: " + maybeDeadBrokers);
-      return;
+      ClusterRecoveryAction clusterRecoveryAction = newClusterRecoveryAction();
+      clusterRecoveryAction.setCluster(cluster);
+      clusterRecoveryAction.setCandidates(candidates);
+      clusterRecoveryAction.setDeadBrokers(deadBrokers);
+      clusterRecoveryAction.setMaybeDeadBrokers(maybeDeadBrokers);
+      clusterRecoveryAction.setNonExistentBrokers(nonExistentBrokers);
+      clusterRecoveryAction.setSensorSet(sensorSet);
+      dispatch(clusterRecoveryAction);
     }
-
     if (!unhealthyKafkaBrokers.isEmpty()) {
       logger.warning(
           "Exists unhealthy Kafka brokers: " + unhealthyKafkaBrokers);
@@ -330,28 +306,13 @@ public class BrokerHealingOperator extends KafkaOperator {
         .collect(Collectors.toSet());
   }
 
-  protected String deriveNonexistentHostname(String existingHostname, String existingId, String nonExistingId) {
-    existingHostname = existingHostname.split("\\.", 2)[0]; // sanitize potential suffixes
-    int diff = nonExistingId.length() - existingId.length();
-    if ( diff > 0 ) {
-      existingId = StringUtils.leftPad(existingId, diff, '0');
-    } else if (diff < 0) {
-      nonExistingId = StringUtils.leftPad(nonExistingId, -diff, '0');
-    }
-
-    String ret = existingHostname.replace(existingId, nonExistingId);
-    if (ret.equals(existingHostname)) {
-      return null;
-    }
-    return ret;
-  }
 
   @Override
   public String getName() {
     return "Broker Healing Operator";
   }
 
-  protected BrokerRecoveryAction newBrokerRecoveryAction() {
-    return new BrokerRecoveryAction();
+  protected ClusterRecoveryAction newClusterRecoveryAction() {
+    return new ClusterRecoveryAction();
   }
 }
