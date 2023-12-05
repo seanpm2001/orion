@@ -144,6 +144,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             return;
         }
         Attribute recoveringNodesAttr = cluster.getAttribute(ATTR_RECOVERING_NODES);
+        logger.warning("[TEST3] recoveringNodesAttr: " + recoveringNodesAttr);
         if (recoveringNodesAttr == null || recoveringNodesAttr.getValue() == null) {
             return;
         }
@@ -155,13 +156,13 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             if (candidates.isEmpty()) {
                 // All the candidates are replaced within cooldownMilliseconds. Skip this round.
                 logger.warning(String.format(
-                        "Nodes in cooldown phase : %s; Last action time: %s; Skip recovering",
+                        "Nodes in cooldown phase: %s; Last action time: %s; Skip recovering",
                         recoveringNodes,
                         new Date(recoveringNodesAttr.getUpdateTimestamp())));
             } else {
                 // Add the new set of recovering nodes to the recovering node set. Reset update time.
                 logger.warning(String.format(
-                        "Nodes in cooldown phase : %s; Last action time: %s; Recovering nodes: %s",
+                        "Nodes in cooldown phase: %s; Last action time: %s; Recovering nodes: %s",
                         recoveringNodes,
                         new Date(recoveringNodesAttr.getUpdateTimestamp()),
                         candidates));
