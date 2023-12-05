@@ -151,7 +151,11 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             return;
         }
         Set<String> recoveringNodes = recoveringNodesAttr.getValue();
-        logger.warning("[TEST5] recoveringNodes: " + recoveringNodes);
+        logger.warning("[TEST5a] recoveringNodes: " + recoveringNodes);
+        logger.warning("[TEST5b] System.currentTimeMillis(): " + System.currentTimeMillis());
+        logger.warning("[TEST5c] recoveringNodesAttr.getUpdateTimestamp(): " + recoveringNodesAttr.getUpdateTimestamp());
+        logger.warning("[TEST5d] cooldownMilliseconds: " + cooldownMilliseconds);
+        logger.warning("[TEST5e] candidates: " + candidates);
         // TODO: Add alert if the recovering node set is too big.
         if (System.currentTimeMillis() - recoveringNodesAttr.getUpdateTimestamp() < cooldownMilliseconds) {
             // Remove all the nodes that are replaced within cooldownMilliseconds from candidates
