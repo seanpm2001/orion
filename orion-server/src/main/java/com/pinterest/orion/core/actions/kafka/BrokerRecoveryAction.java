@@ -205,7 +205,15 @@ public class BrokerRecoveryAction extends NodeAction {
 
   @Override
   public String getName() {
-    return "Broker Recovery" + (isDryRun ? " - Dry Run" : "");
+    // Different action names are required for BrokerRecoveryAction to be dispatched from same ClusterRecoveryAction.
+    String nodeId = "Unknown Node";
+    if (containsAttribute(OrionConstants.NODE_ID)) {
+      nodeId = getAttribute(OrionConstants.NODE_ID).getValue();
+    }
+    return String.format(
+            "Broker Recovery for %s %s",
+           nodeId,
+            (isDryRun ? " - Dry Run" : ""));
   }
 
   private boolean isHostReachable(String hostname, int port) {

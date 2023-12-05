@@ -69,8 +69,10 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             logger.info(restartNote);
             getResult().appendOut(restartNote);
         }
-        String dispatchNote = "Dispatching BrokerRecoveryAction on " + cluster.getClusterId()
-                + " for node: " +  deadBrokerId;
+        String dispatchNote = String.format(
+                "Dispatching BrokerRecoveryAction for node %s in cluster %s. ",
+                deadBrokerId,
+                cluster.getClusterId());
         logger.info(dispatchNote);
         getResult().appendOut(dispatchNote);
         getEngine().dispatchChild(this, brokerRecoveryAction);
