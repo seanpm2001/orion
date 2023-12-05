@@ -71,6 +71,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
     }
 
     protected void healBrokers(Set<String> candidates) throws Exception {
+        logger.warning("[TEST5] ClusterRecoveryAction healBrokers. candidates: " + candidates);
         if (candidates.size() == 1) {
             String deadBrokerId = candidates.iterator().next();
             healBroker(deadBrokerId);
@@ -139,12 +140,11 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
 
     public static void removeRecoveringNodesFromCandidates(Set<String> candidates, Cluster cluster) {
         // Remove all the nodes that are replaced within cooldownMilliseconds from candidates.
-        if (candidates == null || candidates.isEmpty()
-                || cluster == null || cluster.getAttribute(ATTR_RECOVERING_NODES) == null) {
+        if (candidates == null || candidates.isEmpty()) {
             return;
         }
         Attribute recoveringNodesAttr = cluster.getAttribute(ATTR_RECOVERING_NODES);
-        logger.warning("[TEST3] recoveringNodesAttr: " + recoveringNodesAttr);
+        logger.warning("[TEST4] recoveringNodesAttr: " + recoveringNodesAttr);
         if (recoveringNodesAttr == null || recoveringNodesAttr.getValue() == null) {
             return;
         }
