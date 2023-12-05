@@ -63,19 +63,27 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
             brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_NODE_EXISTS_KEY, false);
             brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_NONEXISTENT_HOST_KEY, extractedName);
         }
-
         if (maybeDeadBrokers.size() == 1) {
             // Setting this flag in the action will restart the broker before replacing the broker
             brokerRecoveryAction.setAttribute(BrokerRecoveryAction.ATTR_TRY_TO_RESTART_KEY, true);
-            logger.info("Will try to restart node " + deadBrokerId + " before replacing");
+            String restartNote = "Will try to restart node " + deadBrokerId + " before replacing it. ";
+            logger.info(restartNote);
+            getResult().appendOut(restartNote);
         }
-        logger.info( "Dispatching BrokerRecoveryAction on " + cluster.getClusterId() + " for node: " +  deadBrokerId);
+        String dispatchNote = "Dispatching BrokerRecoveryAction on " + cluster.getClusterId()
+                + " for node: " +  deadBrokerId;
+        logger.info(dispatchNote);
+        getResult().appendOut(dispatchNote);
         getEngine().dispatchChild(this, brokerRecoveryAction);
     }
 
     protected void healBrokers(Set<String> candidates) throws Exception {
         logger.warning("[TEST5] ClusterRecoveryAction healBrokers. candidates: " + candidates);
+        String output = "";
         if (candidates.size() == 1) {
+            output = String.format(
+                    "ClusterRecoveryAction trys to recover broker %s. ",
+                    candidates.iterator().next());
             String deadBrokerId = candidates.iterator().next();
             healBroker(deadBrokerId);
         } else if (candidates.size() > 1){
@@ -91,10 +99,15 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                     }}
             );
             // more than 1 brokers are dead... better alert and have human intervention
-            logger.severe("More than one broker is in bad state - dead: " + deadBrokers + " service down: " + maybeDeadBrokers);
+            output = String.format("More than one brokers are in bad state - dead: %s, service down: %s. " +
+                            "ClusterRecoveryAction skips automatic recovery and pages oncall. ",
+                    deadBrokers, maybeDeadBrokers);
+            logger.severe(output);
         } else {
-            logger.info("No candidates for healing");
+            output = String.format("No candidates for healing in cluster %s. ", cluster.getClusterId());
+            logger.info(output);
         }
+        getResult().appendOut(output);
     }
 
     public void setCandidates(Set<String> candidates) {

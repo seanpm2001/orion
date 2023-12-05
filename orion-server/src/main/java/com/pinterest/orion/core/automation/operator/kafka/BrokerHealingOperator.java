@@ -204,11 +204,11 @@ public class BrokerHealingOperator extends KafkaOperator {
         "\nunhealthy service orion nodes: " + maybeDeadBrokers + "\nnon-existent Brokers: "+ nonExistentBrokers);
     Set<String> candidates = new HashSet<>(Sets.union(deadBrokers, maybeDeadBrokers));
     logger.warning("[TEST2] candidates: " + candidates);
+    // Check if the cluster has other brokers recovering. Remove them from candidates.
+    removeRecoveringNodesFromCandidates(candidates, cluster);
+    logger.warning("[TEST3] candidates after removal: " + candidates);
     if (candidates.size() > 0) {
-      // Check if the cluster has other brokers recovering. Remove them from candidates.
-      removeRecoveringNodesFromCandidates(candidates, cluster);
       // Create ClusterRecoveryAction and dispatch
-      logger.warning("[TEST3] candidates after removal: " + candidates);
       ClusterRecoveryAction clusterRecoveryAction = newClusterRecoveryAction();
       clusterRecoveryAction.setCluster(cluster);
       clusterRecoveryAction.setCandidates(candidates);
