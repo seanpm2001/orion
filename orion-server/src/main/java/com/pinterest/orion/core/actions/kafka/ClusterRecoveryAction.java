@@ -37,6 +37,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
 
     @Override
     public void runAction() throws Exception {
+        logger.warning("[TEST7] runAction: " + candidates);
         try {
             healBrokers(candidates);
             // TODO: add output
