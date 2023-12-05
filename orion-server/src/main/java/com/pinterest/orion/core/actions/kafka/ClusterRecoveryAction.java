@@ -146,9 +146,12 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         Attribute recoveringNodesAttr = cluster.getAttribute(ATTR_RECOVERING_NODES);
         logger.warning("[TEST4] recoveringNodesAttr: " + recoveringNodesAttr);
         if (recoveringNodesAttr == null || recoveringNodesAttr.getValue() == null) {
+            // Initialize the recovering node set with the new set of candidates.
+            cluster.setAttribute(ATTR_RECOVERING_NODES, candidates);
             return;
         }
         Set<String> recoveringNodes = recoveringNodesAttr.getValue();
+        logger.warning("[TEST5] recoveringNodes: " + recoveringNodes);
         // TODO: Add alert if the recovering node set is too big.
         if (System.currentTimeMillis() - recoveringNodesAttr.getUpdateTimestamp() < cooldownMilliseconds) {
             // Remove all the nodes that are replaced within cooldownMilliseconds from candidates
