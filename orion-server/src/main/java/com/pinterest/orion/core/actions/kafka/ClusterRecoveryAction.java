@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -153,17 +154,17 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         }
         Set<String> recoveringNodes = recoveringNodesAttr.getValue();
         logger.warning("[TEST5a] recoveringNodes: " + recoveringNodes);
-        logger.warning("[TEST5b] System.currentTimeMillis(): " + System.currentTimeMillis());
-        logger.warning("[TEST5c] recoveringNodesAttr.getUpdateTimestamp(): " + recoveringNodesAttr.getUpdateTimestamp());
-        logger.warning("[TEST5d] cooldownMilliseconds: " + cooldownMilliseconds);
-        logger.warning("[TEST5e] candidates: " + candidates);
+        logger.warning("[TEST5b] candidates: " + candidates);
         // TODO: Add alert if the recovering node set is too big.
         if (System.currentTimeMillis() - recoveringNodesAttr.getUpdateTimestamp() < cooldownMilliseconds) {
             // Remove all the nodes that are replaced within cooldownMilliseconds from candidates
-            for (String recoveringNode : recoveringNodes) {
-                if (candidates.contains(recoveringNode)) {
-                    candidates.remove(recoveringNode);
+            for (String node : recoveringNodes) {
+                logger.warning("[TEST6a] node: " + node);
+                logger.warning("[TEST6b] candidates: " + candidates);
+                if (candidates.contains(node)) {
+                    candidates.remove(node);
                 }
+                logger.warning("[TEST6c] candidates: " + candidates);
             }
             if (candidates.isEmpty()) {
                 // All the candidates are replaced within cooldownMilliseconds. Skip this round.
@@ -178,8 +179,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                         recoveringNodes,
                         new Date(recoveringNodesAttr.getUpdateTimestamp()),
                         candidates));
-                recoveringNodes = Sets.union(recoveringNodes, candidates);
-                cluster.setAttribute(ATTR_RECOVERING_NODES, recoveringNodes);
+                cluster.setAttribute(ATTR_RECOVERING_NODES, new HashSet<>(Sets.union(recoveringNodes, candidates)));
             }
         } else {
             // All the nodes in the previous recovering node set are timeout.
@@ -192,7 +192,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                     recoveringNodes,
                     new Date(recoveringNodesAttr.getUpdateTimestamp()),
                     candidates));
-            cluster.setAttribute(ATTR_RECOVERING_NODES, candidates);
+            cluster.setAttribute(ATTR_RECOVERING_NODES, new HashSet<>(candidates));
         }
     }
 }
