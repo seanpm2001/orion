@@ -197,6 +197,12 @@ public class BrokerHealingOperator extends KafkaOperator {
     setMessage("offline brokers: " + unhealthyKafkaBrokers + "\nunhealthy agent orion nodes: " + unhealthyAgentNodes +
         "\nunhealthy service orion nodes: " + maybeDeadBrokers + "\nnon-existent Brokers: "+ nonExistentBrokers);
     Set<String> candidates = new HashSet<>(Sets.union(deadBrokers, maybeDeadBrokers));
+    // TEST: Use unhealthyAgentNodes as candidates for recovery testing. TODO: Remove this before merging.
+    if (unhealthyAgentNodes.size() > 0) {
+      logger.warning("[TEST] Using unhealthy agent nodes as candidates for recovery testing: "
+              + unhealthyAgentNodes);
+      candidates = new HashSet<>(Sets.union(candidates, unhealthyAgentNodes));
+    }
     // Check if the cluster has recovering brokers. Remove them from candidates.
     removeRecoveringNodesFromCandidates(candidates, cluster);
     if (candidates.size() > 0) {
