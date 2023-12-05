@@ -41,7 +41,6 @@ public class BrokerRecoveryAction extends NodeAction {
   private static final int maxRetries = 3;
   private static final int retryIntervalMilliseconds = 1000;
 
-  public static final String ATTR_LAST_REPLACED_NODE_ID_KEY = "last_replaced_node_id";
   public static final String ATTR_TRY_TO_RESTART_KEY = "try_restart";
   public static final String ATTR_NODE_EXISTS_KEY = "node_exists";
   public static final String ATTR_NONEXISTENT_HOST_KEY = "nonexistent_host";
@@ -133,7 +132,6 @@ public class BrokerRecoveryAction extends NodeAction {
           return;
         }
       }
-      getEngine().getCluster().setAttribute(ATTR_LAST_REPLACED_NODE_ID_KEY, nodeId);
       OrionServer.METRICS.counter(metricPrefix.resolve("replace_success")).inc();
       markSucceeded();
     } catch (Exception e) {
