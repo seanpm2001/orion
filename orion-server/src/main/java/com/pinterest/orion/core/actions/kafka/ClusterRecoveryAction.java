@@ -1,5 +1,6 @@
 package com.pinterest.orion.core.actions.kafka;
 
+import com.google.common.collect.Sets;
 import com.pinterest.orion.core.Attribute;
 import com.pinterest.orion.core.Cluster;
 import com.pinterest.orion.core.Node;
@@ -159,7 +160,11 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         // TODO: Add alert if the recovering node set is too big.
         if (System.currentTimeMillis() - recoveringNodesAttr.getUpdateTimestamp() < cooldownMilliseconds) {
             // Remove all the nodes that are replaced within cooldownMilliseconds from candidates
-            candidates.removeAll(recoveringNodes);
+            for (String recoveringNode : recoveringNodes) {
+                if (candidates.contains(recoveringNode)) {
+                    candidates.remove(recoveringNode);
+                }
+            }
             if (candidates.isEmpty()) {
                 // All the candidates are replaced within cooldownMilliseconds. Skip this round.
                 logger.warning(String.format(
@@ -173,7 +178,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                         recoveringNodes,
                         new Date(recoveringNodesAttr.getUpdateTimestamp()),
                         candidates));
-                recoveringNodes.addAll(candidates);
+                recoveringNodes = Sets.union(recoveringNodes, candidates);
                 cluster.setAttribute(ATTR_RECOVERING_NODES, recoveringNodes);
             }
         } else {
