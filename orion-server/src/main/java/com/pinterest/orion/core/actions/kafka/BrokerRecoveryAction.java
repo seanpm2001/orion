@@ -211,7 +211,7 @@ public class BrokerRecoveryAction extends NodeAction {
       nodeId = getAttribute(OrionConstants.NODE_ID).getValue();
     }
     return String.format(
-            "Broker Recovery for %s %s",
+            "BrokerRecoveryAction for %s %s",
            nodeId,
             (isDryRun ? " - Dry Run" : ""));
   }
