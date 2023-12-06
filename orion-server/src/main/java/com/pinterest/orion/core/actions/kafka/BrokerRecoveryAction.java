@@ -64,6 +64,9 @@ public class BrokerRecoveryAction extends NodeAction {
   public void runAction() {
     boolean nodeExists = true;
     String nodeId = getAttribute(OrionConstants.NODE_ID).getValue();
+    String startNote = "BrokerRecoveryAction for " + nodeId + " started.";
+    logger.info(startNote);
+    getResult().appendOut(startNote);
     if(containsAttribute(ATTR_NODE_EXISTS_KEY)) {
       nodeExists = getAttribute(ATTR_NODE_EXISTS_KEY).getValue();
     }

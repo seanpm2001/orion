@@ -75,7 +75,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                 cluster.getClusterId());
         logger.info(dispatchNote);
         getResult().appendOut(dispatchNote);
-        getEngine().dispatchChild(this, brokerRecoveryAction);
+        getEngine().dispatch(brokerRecoveryAction);
     }
 
     protected void healBrokers(Set<String> candidates) throws Exception {
