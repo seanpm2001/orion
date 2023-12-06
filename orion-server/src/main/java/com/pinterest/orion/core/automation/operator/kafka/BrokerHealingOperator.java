@@ -214,6 +214,7 @@ public class BrokerHealingOperator extends KafkaOperator {
       clusterRecoveryAction.setMaybeDeadBrokers(maybeDeadBrokers);
       clusterRecoveryAction.setNonExistentBrokers(nonExistentBrokers);
       clusterRecoveryAction.setSensorSet(sensorSet);
+      clusterRecoveryAction.setOwner(getName());
       logger.info("Dispatch ClusterRecoveryAction: " + clusterRecoveryAction.getName());
       cluster.getActionEngine().dispatch(clusterRecoveryAction);
     }
