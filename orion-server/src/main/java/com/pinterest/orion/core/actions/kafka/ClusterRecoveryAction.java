@@ -37,7 +37,10 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
 
     @Override
     public void runAction() throws Exception {
-        String startNote = "ClusterRecoveryAction will try to recover brokers %s in cluster %s. ";
+        String startNote = String.format(
+                "ClusterRecoveryAction will try to recover brokers %s in cluster %s. ",
+                candidates,
+                cluster.getClusterId());
         logger.info(startNote);
         getResult().appendOut(startNote);
         try {
