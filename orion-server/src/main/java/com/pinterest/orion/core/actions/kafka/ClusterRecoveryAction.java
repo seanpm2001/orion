@@ -50,6 +50,7 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         // If agent is still online but Kafka process is down, it will try to restart the broker first.
         Action brokerRecoveryAction = newBrokerRecoveryAction();
         brokerRecoveryAction.setAttribute(OrionConstants.NODE_ID, deadBrokerId, sensorSet);
+        brokerRecoveryAction.setOwner("ClusterRecoveryAction");
 
         if (nonExistentBrokers.contains(deadBrokerId)) {
             Node existingNode = cluster.getNodeMap().values().iterator().next();
