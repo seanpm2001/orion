@@ -44,8 +44,15 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         logger.info(startNote);
         getResult().appendOut(startNote);
         try {
-            healBrokers(candidates);
-            markSucceeded();
+            boolean isSucceed = healBrokers(candidates);
+            if (isSucceed) {
+                markSucceeded();
+            } else {
+                markFailed(String.format(
+                        "ClusterRecoveryAction failed to recover brokers %s in cluster %s. ",
+                        candidates,
+                        cluster.getClusterId()));
+            }
         } catch (Exception e) {
             markFailed(e);
         }
@@ -85,18 +92,25 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
         getEngine().dispatch(brokerRecoveryAction);
     }
 
-    protected void healBrokers(Set<String> candidates) throws Exception {
-        String output = "";
+    protected boolean healBrokers(Set<String> candidates) throws Exception {
+        String output;
+        boolean isSucceed = false;
         if (candidates.size() == 1) {
             output = String.format(
                     "ClusterRecoveryAction trys to recover broker %s. ",
                     candidates.iterator().next());
             String deadBrokerId = candidates.iterator().next();
             healBroker(deadBrokerId);
+            logger.info(output);
+            isSucceed = true;
         } else if (candidates.size() > 1){
+            // more than 1 brokers are dead... better alert and have human intervention
+            output = String.format("More than one brokers are in bad state - dead: %s, service down: %s. " +
+                            "ClusterRecoveryAction skips automatic recovery and pages oncall. ",
+                    deadBrokers, maybeDeadBrokers);
             cluster.getActionEngine().alert(AlertLevel.HIGH, new AlertMessage(
                     candidates.size() + " brokers on " + cluster.getClusterId() + " are unhealthy",
-                    "Brokers " + candidates + " are unhealthy",
+                    output,
                     "orion"
             ));
             OrionServer.metricsCounterInc(
@@ -105,16 +119,13 @@ public class ClusterRecoveryAction extends GenericClusterWideAction.ClusterActio
                         put("clusterId", cluster.getClusterId());
                     }}
             );
-            // more than 1 brokers are dead... better alert and have human intervention
-            output = String.format("More than one brokers are in bad state - dead: %s, service down: %s. " +
-                            "ClusterRecoveryAction skips automatic recovery and pages oncall. ",
-                    deadBrokers, maybeDeadBrokers);
             logger.severe(output);
         } else {
             output = String.format("No candidates for healing in cluster %s. ", cluster.getClusterId());
-            logger.info(output);
+            logger.warning(output);
         }
         getResult().appendOut(output);
+        return isSucceed;
     }
 
     public void setCandidates(Set<String> candidates) {
